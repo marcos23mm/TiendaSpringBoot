@@ -9,22 +9,23 @@ import org.hibernate.annotations.OnDeleteAction;
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "historial")
 public class Historial {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "cliente_id", nullable = false)
-    @JsonBackReference
     private Cliente cliente;
 
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "producto_id", nullable = false)
-    @JsonBackReference
     private org.example.tiendaspringboot.Modelo.DTOs.Producto producto;
 
     @Column(name = "fecha_transaccion", nullable = false)
@@ -40,6 +41,8 @@ public class Historial {
     @Column(name = "descripcion", length = 200)
     private String descripcion;
 
+    public Historial() {
+    }
     public Integer getId() {
         return id;
     }
