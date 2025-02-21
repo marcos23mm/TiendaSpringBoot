@@ -1,65 +1,95 @@
 package org.example.tiendaspringboot.Controlador.Controladores;
 
-import org.example.tiendaspringboot.Controlador.Servicios.ClienteService;
 import org.example.tiendaspringboot.Controlador.Servicios.HistorialService;
-import org.example.tiendaspringboot.Controlador.Servicios.ProductoService;
-import org.example.tiendaspringboot.Modelo.DTOs.*;
+import org.example.tiendaspringboot.Modelo.DTOs.Historial;
+import org.example.tiendaspringboot.Modelo.DTOs.HistorialDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/historial")
+@RequestMapping("/historiales")
 public class HistorialController {
+
     private final HistorialService historialService;
-    private final ClienteService clienteService;
-    private final ProductoService productoService;
 
     @Autowired
-    public HistorialController(HistorialService historialService, ClienteService clienteService, ProductoService productoService) {
+    public HistorialController(HistorialService historialService) {
         this.historialService = historialService;
-        this.clienteService = clienteService;
-        this.productoService = productoService;
     }
 
     @GetMapping
-    public List<Historial> getHistorial() {
-        return historialService.findAll();
+    public ResponseEntity<List<Historial>> getAllHistoriales() {
+        return ResponseEntity.ok(historialService.findAll());
     }
-    @GetMapping("/{id}")
-    public Historial getHistorialById(@PathVariable int id) {
-        Optional<Historial> historial = historialService.findById(id);
-        return historial.orElse(null);
+
+    @GetMapping("/buscar")
+    public ResponseEntity<Historial> getHistorialById(@RequestParam Integer id) {
+        return historialService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-    @PostMapping("/historial_compra")
-    public ResponseEntity<String> compraHistorial(@Valid @RequestBody HistorialDTO historialDTO) {
+
+    @PostMapping("/comprar")
+    public ResponseEntity<String> realizarCompra(
+            @RequestParam Integer clienteId,
+            @RequestParam Integer productoId,
+            @RequestParam Integer cantidad,
+            @RequestParam String tipo,
+            @RequestParam String descripcion
+    ) {
+        HistorialDTO historialDTO = new HistorialDTO();
+        historialDTO.setClienteId(clienteId);
+        historialDTO.setProductoId(productoId);
+        historialDTO.setCantidad(cantidad);
+        historialDTO.setTipo(tipo);
+        historialDTO.setDescripcion(descripcion);
+
         return historialService.realizarCompra(historialDTO);
     }
 
-    @PostMapping("/historial_devolucion")
-    public ResponseEntity<String> devolucionHistorial(@Valid @RequestBody HistorialDTO historialDTO) {
+    @PostMapping("/devolver")
+    public ResponseEntity<String> realizarDevolucion(
+            @RequestParam Integer clienteId,
+            @RequestParam Integer productoId,
+            @RequestParam Integer cantidad,
+            @RequestParam String descripcion
+    ) {
+        HistorialDTO historialDTO = new HistorialDTO();
+        historialDTO.setClienteId(clienteId);
+        historialDTO.setProductoId(productoId);
+        historialDTO.setCantidad(cantidad);
+        historialDTO.setTipo("DEVOLUCION");
+        historialDTO.setDescripcion(descripcion);
+
         return historialService.realizarDevolucion(historialDTO);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarHistorial(@PathVariable int id, @Valid @RequestBody HistorialDTO historialDTO) {
+    @PutMapping("/actualizar")
+    public ResponseEntity<String> actualizarHistorial(
+            @RequestParam Integer id,
+            @RequestParam Integer cantidad,
+            @RequestParam(required = false) String tipo,
+            @RequestParam(required = false) String descripcion
+    ) {
+        HistorialDTO historialDTO = new HistorialDTO();
+        historialDTO.setCantidad(cantidad);
+        historialDTO.setTipo(tipo);
+        historialDTO.setDescripcion(descripcion);
+
         return historialService.actualizarHistorial(id, historialDTO);
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> eliminarHistorial(@PathVariable int id) {
-        if(!historialService.findById(id).isPresent()) {
-            return ResponseEntity.notFound().build();
-        }else{
+    @DeleteMapping("/eliminar")
+    public ResponseEntity<Void> deleteHistorial(@RequestParam Integer id) {
+        if (historialService.findById(id).isPresent()) {
             historialService.delete(id);
-            return new ResponseEntity<>(HttpStatus.OK);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 }
-
 

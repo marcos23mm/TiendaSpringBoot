@@ -4,17 +4,16 @@ import jakarta.validation.Valid;
 import org.example.tiendaspringboot.Controlador.Servicios.ProductoService;
 import org.example.tiendaspringboot.Modelo.DTOs.Producto;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/producto")
+@RequestMapping("/productos")
 public class ProductoController {
+
     private final ProductoService productoService;
 
     @Autowired
@@ -23,38 +22,55 @@ public class ProductoController {
     }
 
     @GetMapping
-    public List<Producto> listar() {
-        return productoService.findAll();
+    public ResponseEntity<List<Producto>> getAllProductos() {
+        return ResponseEntity.ok(productoService.findAll());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Producto> buscar(@PathVariable Integer id) {
-        Optional<Producto> producto = productoService.findById(id);
-        return producto.isPresent() ? ResponseEntity.ok(producto.get()) : ResponseEntity.notFound().build();
+    @GetMapping("/buscar")
+    public ResponseEntity<Producto> getProductoById(@RequestParam Integer id) {
+        return productoService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Producto> guardar(@Valid @RequestBody Producto producto) {
-        Producto savedProducto = productoService.save(producto);
-        return ResponseEntity.ok(savedProducto);
+    @PostMapping("/crear")
+    public ResponseEntity<?> createProducto(@Valid @ModelAttribute Producto producto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+        }
+        Producto nuevoProducto = productoService.save(producto);
+        return ResponseEntity.ok(nuevoProducto);
     }
 
-    @PutMapping
-    public ResponseEntity<Producto> actualizar(@Valid @RequestBody Producto producto) {
-        if (!productoService.findById(producto.getId()).isPresent()) {
-            return ResponseEntity.notFound().build();
+    @PutMapping("/actualizar")
+    public ResponseEntity<?> updateProducto(
+            @RequestParam Integer id,
+            @Valid @ModelAttribute Producto productoActualizado,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
         }
 
-        productoService.save(producto);
-        return new ResponseEntity<>(producto, HttpStatus.OK);
-    }
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        if (!productoService.findById(id).isPresent()) {
-            return ResponseEntity.notFound().build();
-        }
-        productoService.delete(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return productoService.findById(id)
+                .map(producto -> {
+                    producto.setNombre(productoActualizado.getNombre());
+                    producto.setDescripcion(productoActualizado.getDescripcion());
+                    producto.setPrecio(productoActualizado.getPrecio());
+                    producto.setStock(productoActualizado.getStock());
+                    Producto productoGuardado = productoService.save(producto);
+                    return ResponseEntity.ok(productoGuardado);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    @DeleteMapping("/eliminar")
+    public ResponseEntity<Void> deleteProducto(@RequestParam Integer id) {
+        if (productoService.findById(id).isPresent()) {
+            productoService.delete(id);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

@@ -5,14 +5,15 @@ import org.example.tiendaspringboot.Controlador.Servicios.ClienteService;
 import org.example.tiendaspringboot.Modelo.DTOs.Cliente;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/cliente")
+@RequestMapping("/clientes")
 public class ClienteController {
+
     private final ClienteService clienteService;
 
     @Autowired
@@ -21,35 +22,53 @@ public class ClienteController {
     }
 
     @GetMapping
-    public List<Cliente> listar() {
-        return clienteService.findAll();
+    public ResponseEntity<List<Cliente>> getAllClientes() {
+        return ResponseEntity.ok(clienteService.findAll());
     }
 
-    @GetMapping("/{id}")
-    public Cliente findById(@PathVariable Integer id) {
-        Optional<Cliente> cliente = clienteService.findById(id);
-        return cliente.orElse(null);
+    @GetMapping("/buscar")
+    public ResponseEntity<Cliente> getClienteById(@RequestParam Integer id) {
+        return clienteService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<Cliente> guardar(@Valid @RequestBody Cliente cliente) {
-        Cliente clienteSalida = clienteService.save(cliente);
-        return ResponseEntity.ok(clienteSalida);
-    }
-
-    @PutMapping
-    public ResponseEntity<Cliente> actualizar(@Valid @RequestBody Cliente cliente) {
-        if (!clienteService.findById(cliente.getId()).isPresent()) {
-            return ResponseEntity.notFound().build();
+    @PostMapping("/crear")
+    public ResponseEntity<?> createCliente(@Valid @ModelAttribute Cliente cliente, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
         }
-        clienteService.save(cliente);
-        return ResponseEntity.ok(cliente);
+        Cliente nuevoCliente = clienteService.save(cliente);
+        return ResponseEntity.ok(nuevoCliente);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        Cliente cliente = clienteService.findById(id).orElse(null);
-        if (cliente != null) {
+    @PutMapping("/actualizar")
+    public ResponseEntity<?> updateCliente(
+            @RequestParam Integer id,
+            @Valid @ModelAttribute Cliente clienteActualizado,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+        }
+
+        return clienteService.findById(id)
+                .map(cliente -> {
+                    cliente.setNombre(clienteActualizado.getNombre());
+                    cliente.setApellido(clienteActualizado.getApellido());
+                    cliente.setNickname(clienteActualizado.getNickname());
+                    cliente.setPassword(clienteActualizado.getPassword());
+                    cliente.setTelefono(clienteActualizado.getTelefono());
+                    cliente.setDomicilio(clienteActualizado.getDomicilio());
+                    Cliente clienteGuardado = clienteService.save(cliente);
+                    return ResponseEntity.ok(clienteGuardado);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/eliminar")
+    public ResponseEntity<Void> deleteCliente(@RequestParam Integer id) {
+        if (clienteService.findById(id).isPresent()) {
             clienteService.delete(id);
             return ResponseEntity.noContent().build();
         } else {
@@ -57,3 +76,4 @@ public class ClienteController {
         }
     }
 }
+

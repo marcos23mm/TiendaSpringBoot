@@ -59,6 +59,7 @@ public class Cliente {
 
     public Cliente() {
     }
+
     public Integer getId() {
         return id;
     }

@@ -16,20 +16,18 @@ public class Producto {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @NotBlank(message = "El nombre del producto es obligatorio")
-    @Pattern(regexp = "^[a-zA-Z0-9 ]+$", message = "El nombre solo puede contener caracteres alfanuméricos y espacios")
-    //Espacios porque aunque no se pida, los artículos llevarán a veces espacios, como "Ratón inalámbrico" o "Consolador Dragon X300"
+    @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 100, message = "El nombre no puede tener más de 100 caracteres")
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Lob
-    @Column(name = "descripcion")
+    @NotBlank(message = "La descripción es obligatoria")
+    @Column(name = "descripcion", nullable = false, columnDefinition = "TEXT")
     private String descripcion;
 
     @NotNull(message = "El precio es obligatorio")
-    @DecimalMin(value = "0.0", inclusive = true, message = "El precio debe ser un valor positivo o 0")
-    @Digits(integer = 10, fraction = 2, message = "El precio debe tener un máximo de 10 dígitos enteros y 2 decimales")
+    @Positive(message = "El precio debe ser positivo")
+    @Digits(integer = 8, fraction = 2, message = "El precio debe tener máximo 8 dígitos enteros y 2 decimales")
     @Column(name = "precio", nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
     /* ¯\_(ツ)_/¯ devuelve la entidad con BigDecimal aún para esta tienda,
@@ -40,8 +38,9 @@ public class Producto {
     @Column(name = "stock", nullable = false)
     private Integer stock;
 
-    @JsonManagedReference
+
     @OneToMany(mappedBy = "producto")
+    @JsonManagedReference
     private Set<Historial> historials = new LinkedHashSet<>();
 
     public Producto() {
